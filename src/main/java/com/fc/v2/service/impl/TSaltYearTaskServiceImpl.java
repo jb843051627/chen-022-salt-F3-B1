@@ -43,7 +43,13 @@ public class TSaltYearTaskServiceImpl implements ITSaltYearTaskService {
 
     @Override
     public List<TSaltYearTask> listDue(Date at) {
-        List<TSaltYearTask> all = this.saltYearTaskMapper.selectList(new QueryWrapper<TSaltYearTask>());
+        if (at == null) {
+            return new java.util.ArrayList<TSaltYearTask>();
+        }
+        // 只取尚未处理的正常条目：已派出/分不出的不再重复开口
+        List<TSaltYearTask> all = this.saltYearTaskMapper.selectList(new QueryWrapper<TSaltYearTask>()
+                .eq("del_flag", 0)
+                .eq("status", STATUS_WAIT));
         List<TSaltYearTask> due = new java.util.ArrayList<TSaltYearTask>();
         for (TSaltYearTask r : all) {
             if (r.getDueAt() != null && ts(r.getDueAt()).compareTo(ts(at)) < 0) {
@@ -56,12 +62,17 @@ public class TSaltYearTaskServiceImpl implements ITSaltYearTaskService {
     @Override
     public int runOnce(Date at) {
         List<TSaltYearTask> due = listDue(at);
-        if (due.get(0) == null) {
+        if (due.isEmpty()) {
             return 0;
         }
         int ok = 0;
         for (TSaltYearTask r : due) {
-            if (r.getAmount().signum() >= 0) {
+            // 单条失败跳过继续：提前天数缺失/为负的条目分不出，不拖垮整趟
+            if (r.getAmount() == null || r.getAmount().signum() < 0) {
+                continue;
+            }
+            r.setStatus(Integer.valueOf(STATUS_DONE));
+            if (this.saltYearTaskMapper.updateById(r) > 0) {
                 ok++;
             }
         }
