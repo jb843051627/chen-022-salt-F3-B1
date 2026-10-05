@@ -1,5 +1,6 @@
 -- salt 食盐专营管理与食盐质量安全监管 -- schema (chen-022)
 -- 列名与基线实体契约（@TableName/@TableField）逐列对齐，改列必须同步实体。
+-- 判断口径与 doc/schema/salt-spec.md 同源，改一处必须同步另一处。
 -- 库：chen_022
 
 CREATE TABLE IF NOT EXISTS t_salt_ent (
@@ -160,7 +161,8 @@ CREATE TABLE IF NOT EXISTS t_salt_spot_row (
   update_by varchar(64) DEFAULT NULL COMMENT '更新者',
   update_time datetime DEFAULT NULL COMMENT '更新时间',
   remark varchar(500) DEFAULT NULL COMMENT '备注',
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_batch_row (batch_no, row_no)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='抽检结果报送核收行';
 
 CREATE TABLE IF NOT EXISTS t_salt_year_task (
